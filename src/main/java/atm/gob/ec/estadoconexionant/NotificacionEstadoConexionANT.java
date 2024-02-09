@@ -17,6 +17,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.TextStyle;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -24,7 +27,7 @@ import java.util.Locale;
  */
 public class NotificacionEstadoConexionANT {
     
-    
+    private static final Logger LOGGER = Logger.getLogger(NotificacionEstadoConexionANT.class.getName());
 
     public static Connection conectar() throws ClassNotFoundException, SQLException {
         String url = "jdbc:oracle:thin:@srvdbatm.atm.local:1521:srvbdatm"; // Cambia según tu configuración
@@ -35,10 +38,12 @@ public class NotificacionEstadoConexionANT {
         return DriverManager.getConnection(url, usuario, contraseña);
     }
 
-    public boolean isDatosAplicacionAvailable(String wsdlAddress) {
+    public boolean isDatosAplicacionAvailable() {
+        String wsdlUrl = "http://sistematransitolocal.ant.gob.ec:6031/WebServices-DatosAplicacion-context-root/MetodosPort?WSDL"; // Replace with your WSDL URL
+        
         HttpURLConnection connection = null;
         try {
-            URL url = new URL(wsdlAddress);
+            URL url = new URL(wsdlUrl);
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("HEAD");
             connection.getInputStream();
@@ -51,9 +56,27 @@ public class NotificacionEstadoConexionANT {
                 connection.disconnect();
             }
         }
+        
+//                // URL del servicio web (ajusta según tu caso)
+//                URL url = new URL("http://localhost:8080/MyWebService"); // Cambia la URL
+//
+//                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//                connection.setRequestMethod("GET");
+//                connection.setConnectTimeout(10000); // Timeout de 10 segundos
+//
+//                // Realiza la conexión
+//                connection.connect();
+//
+//                // Si el servicio web está disponible (código de respuesta 200)
+//                if (connection.getResponseCode() == 200) {
+//                    servicioDisponible = true;
+//                    break; // Rompe la iteración
+//                }
+//
+        
     }    
     
-    public static String getStatusConnectionANT(){
+    public static String getStatusConnectionANT() throws SQLException, Exception{
         
         Connection conexion = null;
         
@@ -64,50 +87,38 @@ public class NotificacionEstadoConexionANT {
         String strFechaHasta = "";
         String srtError = "";
 
-        try {
-            conexion = conectar();
-            System.out.println("Conexión exitosa a Oracle.");
-            
-            String sql = "{call gep_parametros_doc(?,?,?,?,?,?,?) }"; // Cambia el nombre de la función
-            CallableStatement cst = conexion.prepareCall(sql);
-            
-            // Configura los parámetros de entrada y salida
-            cst.setString(1, "CEX"); // 
-            cst.setString(2, "ANT"); // 
-            cst.registerOutParameter(3, Types.VARCHAR); // 
-            cst.registerOutParameter(4, Types.VARCHAR); // 
-            cst.registerOutParameter(5, Types.VARCHAR); // 
-            cst.registerOutParameter(6, Types.VARCHAR); // 
-            cst.registerOutParameter(7, Types.VARCHAR); // 
+        conexion = conectar();
+        LOGGER.info("Conexión exitosa a Oracle.");
 
-            cst.execute();
+        String sql = "{call gep_parametros_doc(?,?,?,?,?,?,?) }"; // Cambia el nombre de la función
+        CallableStatement cst = conexion.prepareCall(sql);
 
-            // Obtiene los resultados
-            strNumnero = cst.getString(3);
-            strCaracter = cst.getString(4);
-            srtFechaDesde = cst.getString(5);
-            strFechaHasta = cst.getString(6);
-            srtError = cst.getString(7);
-            
-            
-            
-            if (srtError == null){
-                strStatusConnectionANT = strCaracter;
-            }
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }finally{
-            try {
-                if(conexion != null ) 
-                    
-                    conexion.close();
-            } catch (SQLException ex) {
-                System.exit(-1);
-            }
-        }
+        // Configura los parámetros de entrada y salida
+        cst.setString(1, "CEX"); // 
+        cst.setString(2, "ANT"); // 
+        cst.registerOutParameter(3, Types.VARCHAR); // 
+        cst.registerOutParameter(4, Types.VARCHAR); // 
+        cst.registerOutParameter(5, Types.VARCHAR); // 
+        cst.registerOutParameter(6, Types.VARCHAR); // 
+        cst.registerOutParameter(7, Types.VARCHAR); // 
+
+        cst.execute();
+
+        // Obtiene los resultados
+        strNumnero = cst.getString(3);
+        strCaracter = cst.getString(4);
+        srtFechaDesde = cst.getString(5);
+        strFechaHasta = cst.getString(6);
+        srtError = cst.getString(7);          
+
+        if (srtError == null)
+            strStatusConnectionANT = strCaracter;
+        
+        if(conexion != null )                     
+            conexion.close();
         
         return strStatusConnectionANT;
+        
     }
     
     public static int dayOfWeek(LocalDate date) {
@@ -136,7 +147,7 @@ public class NotificacionEstadoConexionANT {
         
         try {
             conexion = conectar();
-            System.out.println("Conexión exitosa a Oracle.");
+            LOGGER.info("Conexión exitosa a Oracle.");
             
             String sql = "{call GCP_CONTROL_ONLINE_ANT(?,?,?,?,?) }"; // Cambia el nombre de la función
             CallableStatement cst = conexion.prepareCall(sql);
@@ -172,40 +183,70 @@ public class NotificacionEstadoConexionANT {
         int maxIteraciones = 5;
         int iteracion = 0;
         boolean servicioDisponible = false;
-
-        while (iteracion < maxIteraciones) {
-            try {
-                // URL del servicio web (ajusta según tu caso)
-                URL url = new URL("http://localhost:8080/MyWebService"); // Cambia la URL
-
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(10000); // Timeout de 10 segundos
-
-                // Realiza la conexión
-                connection.connect();
-
-                // Si el servicio web está disponible (código de respuesta 200)
-                if (connection.getResponseCode() == 200) {
-                    servicioDisponible = true;
-                    break; // Rompe la iteración
+        boolean blnEjecutarTarea = false;
+        
+        String strEstadoConecion = "";
+        
+        LocalDate currentDate = LocalDate.now(); 
+        
+        DayOfWeek dayOfWeek = LocalDate.now().getDayOfWeek();
+        LocalTime currentTime = LocalTime.now();
+        
+        // Evaluar las condiciones
+        if (dayOfWeek == DayOfWeek.SUNDAY) {
+            // No hacer nada 
+            blnEjecutarTarea = false;
+            LOGGER.info("Hoy es domingo. No se realizará ninguna acción.");
+        } else if (dayOfWeek == DayOfWeek.SATURDAY && currentTime.isAfter(LocalTime.of(7, 0)) && currentTime.isBefore(LocalTime.of(17, 0))) {
+            // Acción para sábado entre 07:00 y 17:00
+            blnEjecutarTarea = true;
+            LOGGER.info("Hoy es sábado entre las 07:00 y las 17:00. Realizando acción...");
+            // Realizar la acción correspondiente
+        } else if (currentTime.isAfter(LocalTime.of(7, 0)) && currentTime.isBefore(LocalTime.of(19, 0))) {
+            // Acción para lunes a viernes entre 07:00 y 19:00
+            blnEjecutarTarea = true;
+            LOGGER.info("Hoy es día laborable entre las 07:00 y las 19:00. Realizando acción...");
+            // Realizar la acción correspondiente
+        } else {
+            // No hacer nada
+            blnEjecutarTarea = false;
+            LOGGER.info("No se realizará ninguna acción en este momento.");
+        }
+        
+        if (blnEjecutarTarea == true){
+            try {            
+                strEstadoConecion = getStatusConnectionANT();
+            
+                while (iteracion < maxIteraciones) {
+                    
+                    // Si el servicio web está disponible (código de respuesta 200)
+                    if (isDatosAplicacionAvailable()) {
+                        servicioDisponible = true;
+                        break; // Rompe la iteración
+                    }
+                    
+                    // Pausa de 1.5 minutos
+                    TimeUnit.MINUTES.sleep(1);
+                    
+                    iteracion++;
                 }
-
-                // Pausa de 1.5 minutos
-                TimeUnit.MINUTES.sleep(1);
+            
+                if (servicioDisponible) {
+                    LOGGER.info("El servicio web está disponible.");
+                    if (strEstadoConecion.equals("N")){
+                        LOGGER.info("Actualizar estado de conexion ANT ONLINE");
+                    }
+                } else {
+                    LOGGER.info("El servicio web no está disponible después de " + maxIteraciones + " iteraciones.");
+                    if (strEstadoConecion.equals("S")){
+                        LOGGER.info("Actualizar estado de conexion ANT OFFLINE");
+                    }
+                }
             } catch (Exception e) {
                 e.printStackTrace();
-            }
-
-            iteracion++;
+            } 
         }
-
-        if (servicioDisponible) {
-            System.out.println("El servicio web está disponible.");
-        } else {
-            System.out.println("El servicio web no está disponible después de " + maxIteraciones + " iteraciones.");
-        }
-
+        
     }
     
     /**
@@ -213,21 +254,24 @@ public class NotificacionEstadoConexionANT {
      */
     public static void main(String[] args) {
         // TODO code application logic here
-        String wsdlUrl = "http://sistematransitolocal.ant.gob.ec:6031/WebServices-DatosAplicacion-context-root/MetodosPort?WSDL"; // Replace with your WSDL URL
         
         LocalDate currentDate = LocalDate.now(); 
         
-        System.out.println("Día de la semana (número): " + dayOfWeek(currentDate));
-        System.out.println("Día de la semana (texto): " + getDayOfWeek(currentDate, Locale.getDefault()));
-        System.out.println("Hora actual (número): " + getCurrentHour());
-        System.out.println("Estado de conexion ANT actual: " + getStatusConnectionANT());
+        LOGGER.info("Día de la semana (número): " + dayOfWeek(currentDate));
+        LOGGER.info("Día de la semana (texto): " + getDayOfWeek(currentDate, Locale.getDefault()));
+        LOGGER.info("Hora actual (número): " + getCurrentHour());
+        try {
+            LOGGER.info("Estado de conexion ANT actual: " + getStatusConnectionANT());
+        } catch (Exception ex) {
+            LOGGER.severe(ex.toString());
+        }
         
         NotificacionEstadoConexionANT tester = new NotificacionEstadoConexionANT();
-        boolean isAvailable = tester.isDatosAplicacionAvailable(wsdlUrl);
+        boolean isAvailable = tester.isDatosAplicacionAvailable();
         if (isAvailable) {
-            System.out.println("Estado WEBServices ANT actual: OK" );
+            LOGGER.info("Estado WEBServices ANT actual: OK" );
         } else {
-            System.out.println("Estado WEBServices ANT actual: FAIL" );
+            LOGGER.info("Estado WEBServices ANT actual: FAIL" );
         }        
     }
   
