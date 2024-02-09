@@ -242,7 +242,7 @@ public class NotificacionEstadoConexionANT {
                         setStatusConnectionANT(strOpcion, strParametro);
                     }
                 } else {
-                    LOGGER.info("El servicio web no está disponible después de " + maxIteraciones + " iteraciones.");
+                    LOGGER.log(Level.INFO, "El servicio web no est\u00e1 disponible despu\u00e9s de {0} iteraciones.", maxIteraciones);
                     if (strEstadoConexion.equals("S")){
                         LOGGER.info("Actualizar estado de conexion ANT OFFLINE");
                         strOpcion = "N";
@@ -265,9 +265,9 @@ public class NotificacionEstadoConexionANT {
         LocalDate currentDate = LocalDate.now(); 
         NotificacionEstadoConexionANT tester = new NotificacionEstadoConexionANT();
         
-        LOGGER.info("Día de la semana (número): " + dayOfWeek(currentDate));
-        LOGGER.info("Día de la semana (texto): " + getDayOfWeek(currentDate, Locale.getDefault()));
-        LOGGER.info("Hora actual (número): " + getCurrentHour());
+        LOGGER.log(Level.INFO, "D\u00eda de la semana (n\u00famero): {0}", dayOfWeek(currentDate));
+        LOGGER.log(Level.INFO, "D\u00eda de la semana (texto): {0}", getDayOfWeek(currentDate, Locale.getDefault()));
+        LOGGER.log(Level.INFO, "Hora actual (n\u00famero): {0}", getCurrentHour());
 //        try {
 //            LOGGER.info("Estado de conexion ANT actual: " + getStatusConnectionANT());
 //        } catch (Exception ex) {
