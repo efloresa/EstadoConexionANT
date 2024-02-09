@@ -7,19 +7,23 @@ package atm.gob.ec.estadoconexionant;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
+
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Types;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.TextStyle;
+
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -27,7 +31,7 @@ import java.util.logging.Logger;
  */
 public class NotificacionEstadoConexionANT {
     
-    private static final Logger LOGGER = Logger.getLogger(NotificacionEstadoConexionANT.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(NotificacionEstadoConexionANT.class);
 
     public static Connection conectar() throws ClassNotFoundException, SQLException {
         String url = "jdbc:oracle:thin:@srvdbatm.atm.local:1521:srvbdatm"; // Cambia según tu configuración
@@ -242,7 +246,7 @@ public class NotificacionEstadoConexionANT {
                         setStatusConnectionANT(strOpcion, strParametro);
                     }
                 } else {
-                    LOGGER.log(Level.INFO, "El servicio web no est\u00e1 disponible despu\u00e9s de {0} iteraciones.", maxIteraciones);
+                    LOGGER.info("El servicio web no est\u00e1 disponible despu\u00e9s de {0} iteraciones.", maxIteraciones);
                     if (strEstadoConexion.equals("S")){
                         LOGGER.info("Actualizar estado de conexion ANT OFFLINE");
                         strOpcion = "N";
@@ -265,9 +269,9 @@ public class NotificacionEstadoConexionANT {
         LocalDate currentDate = LocalDate.now(); 
         NotificacionEstadoConexionANT tester = new NotificacionEstadoConexionANT();
         
-        LOGGER.log(Level.INFO, "D\u00eda de la semana (n\u00famero): {0}", dayOfWeek(currentDate));
-        LOGGER.log(Level.INFO, "D\u00eda de la semana (texto): {0}", getDayOfWeek(currentDate, Locale.getDefault()));
-        LOGGER.log(Level.INFO, "Hora actual (n\u00famero): {0}", getCurrentHour());
+        LOGGER.info("D\u00eda de la semana (n\u00famero): {0}", dayOfWeek(currentDate));
+        LOGGER.info("D\u00eda de la semana (texto): {0}", getDayOfWeek(currentDate, Locale.getDefault()));
+        LOGGER.info("Hora actual (n\u00famero): {0}", getCurrentHour());
         
         tester.ConsultaServicioWeb();
         
