@@ -268,18 +268,6 @@ public class NotificacionEstadoConexionANT {
         LOGGER.log(Level.INFO, "D\u00eda de la semana (n\u00famero): {0}", dayOfWeek(currentDate));
         LOGGER.log(Level.INFO, "D\u00eda de la semana (texto): {0}", getDayOfWeek(currentDate, Locale.getDefault()));
         LOGGER.log(Level.INFO, "Hora actual (n\u00famero): {0}", getCurrentHour());
-//        try {
-//            LOGGER.info("Estado de conexion ANT actual: " + getStatusConnectionANT());
-//        } catch (Exception ex) {
-//            LOGGER.severe(ex.toString());
-//        }
-        
-//        boolean isAvailable = tester.isDatosAplicacionAvailable();
-//        if (isAvailable) {
-//            LOGGER.info("Estado WEBServices ANT actual: OK" );
-//        } else {
-//            LOGGER.info("Estado WEBServices ANT actual: FAIL" );
-//        }
         
         tester.ConsultaServicioWeb();
         
