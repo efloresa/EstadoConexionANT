@@ -138,7 +138,7 @@ public class NotificacionEstadoConexionANT {
         return horaActual.getHour();
     }
     
-    public void setStatusConnectionANT(){
+    public void setStatusConnectionANT(String paramOpcion, String paramParametro){
         
         Connection conexion = null;
         String strStatusConnectionANT = "";
@@ -153,8 +153,8 @@ public class NotificacionEstadoConexionANT {
             CallableStatement cst = conexion.prepareCall(sql);
             
             // Configura los parámetros de entrada y salida
-            cst.setString(1, "CEX"); // 
-            cst.setString(2, "ANT"); // 
+            cst.setString(1, paramOpcion); // 
+            cst.setString(2, paramParametro); // 
             cst.registerOutParameter(3, Types.VARCHAR); // 
             cst.registerOutParameter(4, Types.VARCHAR); // 
             cst.setString(5, ""); // Nombre
@@ -165,6 +165,7 @@ public class NotificacionEstadoConexionANT {
             strExito = cst.getString(3);
             strMensaje = cst.getString(4);            
             
+            LOGGER.info("Se ejectuto con exito? " + strExito + " " + strMensaje);
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -185,7 +186,9 @@ public class NotificacionEstadoConexionANT {
         boolean servicioDisponible = false;
         boolean blnEjecutarTarea = false;
         
-        String strEstadoConecion = "";
+        String strEstadoConexion = "";
+        String strParametro = "ANT";
+        String strOpcion = "";
         
         LocalDate currentDate = LocalDate.now(); 
         
@@ -215,7 +218,7 @@ public class NotificacionEstadoConexionANT {
         
         if (blnEjecutarTarea == true){
             try {            
-                strEstadoConecion = getStatusConnectionANT();
+                strEstadoConexion = getStatusConnectionANT();
             
                 while (iteracion < maxIteraciones) {
                     
@@ -233,13 +236,17 @@ public class NotificacionEstadoConexionANT {
             
                 if (servicioDisponible) {
                     LOGGER.info("El servicio web está disponible.");
-                    if (strEstadoConecion.equals("N")){
-                        LOGGER.info("Actualizar estado de conexion ANT ONLINE");
+                    if (strEstadoConexion.equals("N")){
+                        LOGGER.info("Actualizar estado de conexion ANT ONLINE"); 
+                        strOpcion = "S";
+                        setStatusConnectionANT(strOpcion, strParametro);
                     }
                 } else {
                     LOGGER.info("El servicio web no está disponible después de " + maxIteraciones + " iteraciones.");
-                    if (strEstadoConecion.equals("S")){
+                    if (strEstadoConexion.equals("S")){
                         LOGGER.info("Actualizar estado de conexion ANT OFFLINE");
+                        strOpcion = "N";
+                        setStatusConnectionANT(strOpcion, strParametro);
                     }
                 }
             } catch (Exception e) {
@@ -256,23 +263,26 @@ public class NotificacionEstadoConexionANT {
         // TODO code application logic here
         
         LocalDate currentDate = LocalDate.now(); 
+        NotificacionEstadoConexionANT tester = new NotificacionEstadoConexionANT();
         
         LOGGER.info("Día de la semana (número): " + dayOfWeek(currentDate));
         LOGGER.info("Día de la semana (texto): " + getDayOfWeek(currentDate, Locale.getDefault()));
         LOGGER.info("Hora actual (número): " + getCurrentHour());
-        try {
-            LOGGER.info("Estado de conexion ANT actual: " + getStatusConnectionANT());
-        } catch (Exception ex) {
-            LOGGER.severe(ex.toString());
-        }
+//        try {
+//            LOGGER.info("Estado de conexion ANT actual: " + getStatusConnectionANT());
+//        } catch (Exception ex) {
+//            LOGGER.severe(ex.toString());
+//        }
         
-        NotificacionEstadoConexionANT tester = new NotificacionEstadoConexionANT();
-        boolean isAvailable = tester.isDatosAplicacionAvailable();
-        if (isAvailable) {
-            LOGGER.info("Estado WEBServices ANT actual: OK" );
-        } else {
-            LOGGER.info("Estado WEBServices ANT actual: FAIL" );
-        }        
+//        boolean isAvailable = tester.isDatosAplicacionAvailable();
+//        if (isAvailable) {
+//            LOGGER.info("Estado WEBServices ANT actual: OK" );
+//        } else {
+//            LOGGER.info("Estado WEBServices ANT actual: FAIL" );
+//        }
+        
+        tester.ConsultaServicioWeb();
+        
     }
   
 //    public static void main(String[] args) {
