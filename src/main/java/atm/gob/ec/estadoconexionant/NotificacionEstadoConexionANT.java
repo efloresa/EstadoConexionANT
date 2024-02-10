@@ -5,6 +5,7 @@
  */
 package atm.gob.ec.estadoconexionant;
 
+import atm.gob.ec.utils.Utils;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -20,10 +21,12 @@ import java.time.LocalTime;
 import java.time.format.TextStyle;
 
 import java.util.Locale;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 
 /**
  *
@@ -32,6 +35,34 @@ import org.apache.logging.log4j.Logger;
 public class NotificacionEstadoConexionANT {
     
     private static final Logger LOGGER = LogManager.getLogger(NotificacionEstadoConexionANT.class);
+    
+    private LoggerContext context;
+    
+    private static String directorioSistema;
+    private static final String strTelegramUrl = "";
+    private static final String strapiToken = "";
+    private static final String strChatId = ""; // SUPERGROUP ID ¿?    
+    private static String strTTranscurrido = "" ;
+    private static String strPattern = "";
+    private static String dirLog4j2;
+    
+    private Utils utl;
+    
+    private Properties propertie;   
+    
+    
+    public NotificacionEstadoConexionANT(){
+         
+        //OBTENER DIRECTORIO DEL SISTEMA                
+        directorioSistema = Utils.getDirectorioSistema();
+
+        propertie = Utils.getProperties();        
+        
+        context = Utils.configureLogging(); 
+        
+        strPattern = "[^A-Za-z0-9.+()'@:%/]";
+        
+    }
 
     public static Connection conectar() throws ClassNotFoundException, SQLException {
         String url = "jdbc:oracle:thin:@srvdbatm.atm.local:1521:srvbdatm"; // Cambia según tu configuración
@@ -39,6 +70,8 @@ public class NotificacionEstadoConexionANT {
         String contraseña = "NSVDLMSVCE";
 
         Class.forName("oracle.jdbc.driver.OracleDriver");
+        
+        LOGGER.info("Intentando conexion a Oracle...");
         return DriverManager.getConnection(url, usuario, contraseña);
     }
 
@@ -48,36 +81,28 @@ public class NotificacionEstadoConexionANT {
         HttpURLConnection connection = null;
         try {
             URL url = new URL(wsdlUrl);
+//            connection = (HttpURLConnection) url.openConnection();
+//            connection.setRequestMethod("HEAD");
+//            connection.getInputStream();
+            
+            LOGGER.info("Intentando conexion a WSDL...");
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("HEAD");
-            connection.getInputStream();
+            connection.setConnectTimeout(10000); // Timeout de 10 segundos
+            
+            // Realiza la conexión
+            connection.connect();
+            
             return connection.getResponseCode() == 200;
-        } catch (Exception e) {
-//            e.printStackTrace();
+        } catch (Exception ex) {
+            LOGGER.warn(ex.toString());
             return false;
         } finally {
             if (connection != null) {
                 connection.disconnect();
             }
         }
-        
-//                // URL del servicio web (ajusta según tu caso)
-//                URL url = new URL("http://localhost:8080/MyWebService"); // Cambia la URL
-//
-//                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-//                connection.setRequestMethod("GET");
-//                connection.setConnectTimeout(10000); // Timeout de 10 segundos
-//
-//                // Realiza la conexión
-//                connection.connect();
-//
-//                // Si el servicio web está disponible (código de respuesta 200)
-//                if (connection.getResponseCode() == 200) {
-//                    servicioDisponible = true;
-//                    break; // Rompe la iteración
-//                }
-//
-        
+                
     }    
     
     public static String getStatusConnectionANT() throws SQLException, Exception{
@@ -92,8 +117,8 @@ public class NotificacionEstadoConexionANT {
         String srtError = "";
 
         conexion = conectar();
-        LOGGER.info("Conexión exitosa a Oracle.");
-
+        
+        LOGGER.info("Intentando recuperar estado de conexion...");
         String sql = "{call gep_parametros_doc(?,?,?,?,?,?,?) }"; // Cambia el nombre de la función
         CallableStatement cst = conexion.prepareCall(sql);
 
@@ -120,6 +145,8 @@ public class NotificacionEstadoConexionANT {
         
         if(conexion != null )                     
             conexion.close();
+        
+        LOGGER.info("Estado de conexion ANT: " + strStatusConnectionANT);
         
         return strStatusConnectionANT;
         
@@ -151,7 +178,8 @@ public class NotificacionEstadoConexionANT {
         
         try {
             conexion = conectar();
-            LOGGER.info("Conexión exitosa a Oracle.");
+            
+            LOGGER.info("Intentando cambiar estado de conexion...");
             
             String sql = "{call GCP_CONTROL_ONLINE_ANT(?,?,?,?,?) }"; // Cambia el nombre de la función
             CallableStatement cst = conexion.prepareCall(sql);
@@ -171,13 +199,14 @@ public class NotificacionEstadoConexionANT {
             
             LOGGER.info("Se ejectuto con exito? " + strExito + " " + strMensaje);
             
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            LOGGER.warn(ex.toString());
         }finally{
             try {
                 if(conexion != null ) 
                     conexion.close();
             } catch (SQLException ex) {
+                LOGGER.warn(ex.toString());
                 System.exit(-1);
             }
         }
@@ -194,8 +223,6 @@ public class NotificacionEstadoConexionANT {
         String strParametro = "ANT";
         String strOpcion = "";
         
-        LocalDate currentDate = LocalDate.now(); 
-        
         DayOfWeek dayOfWeek = LocalDate.now().getDayOfWeek();
         LocalTime currentTime = LocalTime.now();
         
@@ -204,12 +231,12 @@ public class NotificacionEstadoConexionANT {
             // No hacer nada 
             blnEjecutarTarea = false;
             LOGGER.info("Hoy es domingo. No se realizará ninguna acción.");
-        } else if (dayOfWeek == DayOfWeek.SATURDAY && currentTime.isAfter(LocalTime.of(7, 0)) && currentTime.isBefore(LocalTime.of(17, 0))) {
+        } else if (dayOfWeek == DayOfWeek.SATURDAY && currentTime.isAfter(LocalTime.of(7, 0)) && currentTime.isBefore(LocalTime.of(18, 0))) {
             // Acción para sábado entre 07:00 y 17:00
             blnEjecutarTarea = true;
             LOGGER.info("Hoy es sábado entre las 07:00 y las 17:00. Realizando acción...");
             // Realizar la acción correspondiente
-        } else if (currentTime.isAfter(LocalTime.of(7, 0)) && currentTime.isBefore(LocalTime.of(19, 0))) {
+        } else if (currentTime.isAfter(LocalTime.of(7, 0)) && currentTime.isBefore(LocalTime.of(20, 0))) {
             // Acción para lunes a viernes entre 07:00 y 19:00
             blnEjecutarTarea = true;
             LOGGER.info("Hoy es día laborable entre las 07:00 y las 19:00. Realizando acción...");
@@ -222,11 +249,10 @@ public class NotificacionEstadoConexionANT {
         
         if (blnEjecutarTarea == true){
             try {            
-                strEstadoConexion = getStatusConnectionANT();
             
                 while (iteracion < maxIteraciones) {
                     
-                    // Si el servicio web está disponible (código de respuesta 200)
+                    LOGGER.info("Si el servicio web está disponible (código de respuesta 200)");
                     if (isDatosAplicacionAvailable()) {
                         servicioDisponible = true;
                         break; // Rompe la iteración
@@ -237,7 +263,10 @@ public class NotificacionEstadoConexionANT {
                     
                     iteracion++;
                 }
-            
+                
+                LOGGER.info("Consulta estado de conexion ANT...");
+                strEstadoConexion = getStatusConnectionANT();
+                
                 if (servicioDisponible) {
                     LOGGER.info("El servicio web está disponible.");
                     if (strEstadoConexion.equals("N")){
@@ -246,15 +275,15 @@ public class NotificacionEstadoConexionANT {
                         setStatusConnectionANT(strOpcion, strParametro);
                     }
                 } else {
-                    LOGGER.info("El servicio web no est\u00e1 disponible despu\u00e9s de {0} iteraciones.", maxIteraciones);
+                    LOGGER.info("El servicio web no esta disponible despues de " + maxIteraciones + " iteraciones." );
                     if (strEstadoConexion.equals("S")){
                         LOGGER.info("Actualizar estado de conexion ANT OFFLINE");
                         strOpcion = "N";
                         setStatusConnectionANT(strOpcion, strParametro);
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Exception ex) {
+                LOGGER.warn(ex.toString());
             } 
         }
         
@@ -269,9 +298,9 @@ public class NotificacionEstadoConexionANT {
         LocalDate currentDate = LocalDate.now(); 
         NotificacionEstadoConexionANT tester = new NotificacionEstadoConexionANT();
         
-        LOGGER.info("D\u00eda de la semana (n\u00famero): {0}", dayOfWeek(currentDate));
-        LOGGER.info("D\u00eda de la semana (texto): {0}", getDayOfWeek(currentDate, Locale.getDefault()));
-        LOGGER.info("Hora actual (n\u00famero): {0}", getCurrentHour());
+        LOGGER.info("Dia de la semana (numero):" + dayOfWeek(currentDate));
+        LOGGER.info("Dia de la semana (texto): " + getDayOfWeek(currentDate, Locale.getDefault()));
+        LOGGER.info("Hora actual (numero): " +  getCurrentHour());
         
         tester.ConsultaServicioWeb();
         
@@ -286,10 +315,10 @@ public class NotificacionEstadoConexionANT {
 //            QName qname = new QName("http://gen/", "MetodosService");
 //
 //            Service service = Service.create(url, qname);
-//            System.out.println("El servicio web WSDL está disponible.");
+//            LOGGER.info("El servicio web WSDL está disponible.");
 //                        
 //        } catch (WebServiceException e) {
-//            System.out.println("El servicio web WSDL NO está disponible.");
+//            LOGGER.info("El servicio web WSDL NO está disponible.");
 //            e.printStackTrace();
 //        } catch (Exception e) {
 //            e.printStackTrace();

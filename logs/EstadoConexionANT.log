@@ -1,0 +1,4 @@
+[INFO ] 2024-02-09 21:41:01,394 NotificacionEstadoConexionANT.main() - Dia de la semana (numero):5
+[INFO ] 2024-02-09 21:41:01,408 NotificacionEstadoConexionANT.main() - Dia de la semana (texto): viernes
+[INFO ] 2024-02-09 21:41:01,408 NotificacionEstadoConexionANT.main() - Hora actual (numero): 21
+[INFO ] 2024-02-09 21:41:01,408 NotificacionEstadoConexionANT.ConsultaServicioWeb() - No se realizará ninguna acción en este momento.

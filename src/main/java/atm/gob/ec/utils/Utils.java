@@ -10,14 +10,16 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
+
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 
 /**
@@ -26,12 +28,21 @@ import org.apache.logging.log4j.core.LoggerContext;
  */
 
 public class Utils {
+
+    private static final Logger LOGGER = LogManager.getLogger(Utils.class);
+    
+    private LoggerContext context;
+    
     private static URL urlArc = null;
+    
     private static String userDir = "";
+    private static String directorioSistema;
+    
     private static FileInputStream file;
     
     public Utils(){
-        
+        directorioSistema = getDirectorioSistema();
+        context = configureLogging(); 
     }
     
     public static String getDirectorioSistema(){
@@ -55,10 +66,10 @@ public class Utils {
             properties.load(file);
             file.close();
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, null, ex);
+            LOGGER.info(ex.toString());
             System.exit(-1);
         } catch (IOException ex) {
-            Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, null, ex);
+            LOGGER.info(ex.toString());
             System.exit(-1);
         }        
         return properties;
@@ -74,7 +85,7 @@ public class Utils {
             //URL url =  this.getClass().getClassLoader().getResource("log4j2.xml");
             //URL url =  this.getClass().getClassLoader().getResource(dirLog4j2);
             URL url = new File(getDirectorioSistema() + "/resources/log4j2.xml").toURL();
-            System.out.println("URL to log4j2: " + url.getFile());
+            LOGGER.info("URL to log4j2: " + url.getFile());
             if (url != null) {
               context.setConfigLocation(url.toURI());
             } else 
@@ -95,7 +106,7 @@ public class Utils {
             context = (LoggerContext) LogManager.getContext(false);
             
             URL url = new File(dirLog4j2).toURL();
-            System.out.println("URL to log4j2: " + url.getFile());
+            LOGGER.info("URL to log4j2: " + url.getFile());
             if (url != null) {
               context.setConfigLocation(url.toURI());
             } else 
@@ -136,7 +147,7 @@ public class Utils {
         }catch (UnsupportedEncodingException e){
             //System.out.println(e.getMessage());
             strRes=null;            
-            System.out.println("strRes: " + strRes);
+            LOGGER.info("strRes: " + strRes);
         }
         return strRes;
     }
@@ -155,7 +166,7 @@ public class Utils {
             }
         }catch (UnsupportedEncodingException e){
             strRes=null;
-            System.out.println("strRes: " + strRes);
+            LOGGER.info("strRes: " + strRes);
         }
         return strRes;
     }
